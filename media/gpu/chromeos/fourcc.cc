@@ -367,10 +367,14 @@ static_assert(Fourcc::NM12 == V4L2_PIX_FMT_NV12M, "Mismatch Fourcc");
 static_assert(Fourcc::NM21 == V4L2_PIX_FMT_NV21M, "Mismatch Fourcc");
 static_assert(Fourcc::YU16 == V4L2_PIX_FMT_YUV422P, "Mismatch Fourcc");
 static_assert(Fourcc::YM16 == V4L2_PIX_FMT_YUV422M, "Mismatch Fourcc");
+#if defined(V4L2_PIX_FMT_MM21) && defined(V4L2_PIX_FMT_MT21C)
 static_assert(Fourcc::MM21 == V4L2_PIX_FMT_MM21, "Mismatch Fourcc");
 static_assert(Fourcc::MT21 == V4L2_PIX_FMT_MT21C, "Mismatch Fourcc");
+#endif
 static_assert(Fourcc::AR24 == V4L2_PIX_FMT_ABGR32, "Mismatch Fourcc");
+#ifdef V4L2_PIX_FMT_P010
 static_assert(Fourcc::P010 == V4L2_PIX_FMT_P010, "Mismatch Fourcc");
+#endif
 // MT2T has not been upstreamed yet
 #ifdef V4L2_PIX_FMT_MT2T
 static_assert(Fourcc::MT2T == V4L2_PIX_FMT_MT2T, "Mismatch Fourcc");

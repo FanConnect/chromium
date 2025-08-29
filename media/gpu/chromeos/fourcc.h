@@ -14,6 +14,18 @@
 #include "media/gpu/buildflags.h"
 #include "media/gpu/media_gpu_export.h"
 
+#ifndef V4L2_PIX_FMT_MT21C
+#define V4L2_PIX_FMT_MT21C	v4l2_fourcc('M', 'T', '2', '1') /* Mediatek compressed block mode  */
+#endif
+
+#ifndef V4L2_PIX_FMT_VP9
+#define V4L2_PIX_FMT_VP9	v4l2_fourcc('V', 'P', '9', '0') /* VP9 */
+#endif
+
+#ifndef V4L2_PIX_FMT_HEVC
+#define V4L2_PIX_FMT_HEVC	v4l2_fourcc('H', 'E', 'V', 'C') /* HEVC */
+#endif
+
 namespace media {
 
 // Composes a Fourcc value.

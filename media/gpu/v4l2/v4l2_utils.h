@@ -29,6 +29,26 @@
 #define V4L2_PIX_FMT_INVALID v4l2_fourcc('0', '0', '0', '0')
 #endif
 
+#ifndef V4L2_PIX_FMT_H264_SLICE
+#define V4L2_PIX_FMT_H264_SLICE v4l2_fourcc('S', '2', '6', '4')
+#endif
+
+#ifndef V4L2_PIX_FMT_HEVC_SLICE
+#define V4L2_PIX_FMT_HEVC_SLICE v4l2_fourcc('S', '2', '6', '5')
+#endif
+
+#ifndef V4L2_PIX_FMT_VP8_FRAME
+#define V4L2_PIX_FMT_VP8_FRAME v4l2_fourcc('V', 'P', '8', 'F')
+#endif
+
+#ifndef V4L2_PIX_FMT_VP9_FRAME
+#define V4L2_PIX_FMT_VP9_FRAME v4l2_fourcc('V', 'P', '9', 'F')
+#endif
+
+#ifndef V4L2_PIX_FMT_AV1_FRAME
+#define V4L2_PIX_FMT_AV1_FRAME v4l2_fourcc('A', 'V', '1', 'F')
+#endif
+
 namespace gfx {
 class Size;
 }

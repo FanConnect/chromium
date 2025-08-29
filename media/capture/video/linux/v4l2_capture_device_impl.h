@@ -8,6 +8,7 @@
 #include <fcntl.h>
 #include <poll.h>
 
+#include "media/capture/buildflags.h"
 #include "media/capture/capture_export.h"
 #include "media/capture/video/linux/v4l2_capture_device.h"
 
@@ -17,6 +18,8 @@ namespace media {
 // V4L2 APIs.
 class CAPTURE_EXPORT V4L2CaptureDeviceImpl : public V4L2CaptureDevice {
  public:
+  V4L2CaptureDeviceImpl();
+
   int open(const char* device_name, int flags) override;
   int close(int fd) override;
   int ioctl(int fd, int request, void* argp) override;
@@ -32,6 +35,11 @@ class CAPTURE_EXPORT V4L2CaptureDeviceImpl : public V4L2CaptureDevice {
 
  private:
   ~V4L2CaptureDeviceImpl() override;
+
+#if BUILDFLAG(USE_LIBV4L2)
+  // Use libv4l2 when operating |fd|.
+  bool use_libv4l2_;
+#endif
 };
 
 }  // namespace media

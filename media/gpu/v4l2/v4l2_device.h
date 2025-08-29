@@ -285,6 +285,9 @@ class MEDIA_GPU_EXPORT V4L2Device
   // Callback to use for allocating secure buffers.
   AllocateSecureBufferAsCallback secure_allocate_cb_;
 
+  // Use libv4l2 when operating |device_fd_|.
+  bool use_libv4l2_;
+
   SEQUENCE_CHECKER(client_sequence_checker_);
 };
 

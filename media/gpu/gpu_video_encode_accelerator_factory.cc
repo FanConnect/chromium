@@ -47,7 +47,8 @@ namespace media {
 namespace {
 #if BUILDFLAG(USE_V4L2_CODEC)
 std::unique_ptr<VideoEncodeAccelerator> CreateV4L2VEA() {
-#if BUILDFLAG(IS_CHROMEOS)
+/* HACK: Enable V4L2 VEA for v4l-rkmpp */
+#if 1 // BUILDFLAG(IS_CHROMEOS)
   // TODO(crbug.com/901264): Encoders use hack for passing offset within
   // a DMA-buf, which is not supported upstream.
   return base::WrapUnique<VideoEncodeAccelerator>(

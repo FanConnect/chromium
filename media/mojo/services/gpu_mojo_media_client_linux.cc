@@ -23,6 +23,10 @@ BASE_FEATURE(kVaapiVideoDecodeLinuxZeroCopyGL,
              base::FEATURE_DISABLED_BY_DEFAULT);
 
 VideoDecoderType GetPreferredLinuxDecoderImplementation() {
+#if BUILDFLAG(USE_V4L2_CODEC)
+  return VideoDecoderType::kV4L2;
+#endif
+
   // VaapiVideoDecoder flag is required for VaapiVideoDecoder.
   if (!base::FeatureList::IsEnabled(kVaapiVideoDecodeLinux)) {
     return VideoDecoderType::kUnknown;
@@ -72,6 +76,10 @@ std::vector<Fourcc> GetPreferredRenderableFourccs(
   // color depth (P010 -> AR24), it should be optimized for zero-copy path in
   // the future.
   renderable_fourccs.emplace_back(Fourcc::AR24);
+
+  // HACK: Support for zero-copy NV12 textures preferentially.
+  if (gpu_preferences.gr_context_type == gpu::GrContextType::kGL)
+    renderable_fourccs.emplace_back(Fourcc::NV12);
 
   return renderable_fourccs;
 }

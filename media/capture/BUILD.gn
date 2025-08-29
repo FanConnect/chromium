@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import("//build/buildflag_header.gni")
 import("//build/config/chromeos/ui_mode.gni")
 import("//build/config/features.gni")
 import("//build/config/ui.gni")
@@ -17,6 +18,14 @@ group("capture") {
     "//media/capture/mojom:image_capture_types",
     "//media/capture/mojom:video_capture",
     "//services/service_manager/public/cpp",
+  ]
+}
+
+buildflag_header("buildflags") {
+  header = "buildflags.h"
+
+  flags = [
+    "USE_LIBV4L2=$use_v4lplugin",
   ]
 }
 
@@ -262,6 +271,12 @@ component("capture_lib") {
       ]
     }
     deps += [ "//gpu/command_buffer/client" ]
+
+    public_deps += [ ":buildflags" ]
+
+    if (use_v4lplugin) {
+      deps += [ "//media/gpu/v4l2:libv4l2_stubs" ]
+    }
   }
 
   if (is_linux) {

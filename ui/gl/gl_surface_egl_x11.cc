@@ -71,10 +71,19 @@ gfx::SwapResult NativeViewGLSurfaceEGLX11::SwapBuffers(
 }
 
 EGLint NativeViewGLSurfaceEGLX11::GetNativeVisualID() const {
+/**
+ * HACK: Ignore native visual ID, because the Mali DDK only reports EGL
+ * configs for the first compatible visual, whereas Chromium would choose
+ * a random compatible visual.
+ */
+#if 0
   x11::VisualId visual_id;
   GetXNativeConnection()->GetOrCreateVisualManager().ChooseVisualForWindow(
       true, &visual_id, nullptr, nullptr, nullptr);
   return static_cast<EGLint>(visual_id);
+#else
+  return -1;
+#endif
 }
 
 NativeViewGLSurfaceEGLX11::~NativeViewGLSurfaceEGLX11() {

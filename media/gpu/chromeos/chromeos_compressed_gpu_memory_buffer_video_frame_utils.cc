@@ -95,8 +95,12 @@ scoped_refptr<VideoFrame> WrapChromeOSCompressedGpuMemoryBufferAsVideoFrame(
 }
 
 bool IsIntelMediaCompressedModifier(uint64_t modifier) {
+#ifdef I915_FORMAT_MOD_Y_TILED_GEN12_MC_CCS
   return modifier == I915_FORMAT_MOD_Y_TILED_GEN12_MC_CCS ||
          modifier == I915_FORMAT_MOD_4_TILED_MTL_MC_CCS;
+#else
+  return false;
+#endif
 }
 
 std::string IntelMediaCompressedModifierToString(uint64_t modifier) {

@@ -1060,10 +1060,14 @@ V4L2Queue::V4L2Queue(const IoctlAsCallback& ioctl_cb,
       weak_this_factory_(this) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 
+#if BUILDFLAG(IS_CHROMEOS)
   struct v4l2_requestbuffers reqbufs = {
       .count = 0, .type = type_, .memory = V4L2_MEMORY_MMAP};
   supports_requests_ = (ioctl_cb_.Run(VIDIOC_REQBUFS, &reqbufs) == kIoctlOk) &&
                        (reqbufs.capabilities & V4L2_BUF_CAP_SUPPORTS_REQUESTS);
+#else
+  supports_requests_ = false;
+#endif
 
   // Stateful backends for example do not support requests.
   VPLOG_IF(4, supports_requests_)
@@ -1180,6 +1184,7 @@ size_t V4L2Queue::AllocateBuffers(size_t count,
   planes_count_ = format->fmt.pix_mp.num_planes;
   DCHECK_LE(planes_count_, static_cast<size_t>(VIDEO_MAX_PLANES));
 
+#if BUILDFLAG(IS_CHROMEOS)
   __u8 flags = incoherent ? V4L2_MEMORY_FLAG_NON_COHERENT : 0;
   if (allocate_secure_cb_) {
     flags |= V4L2_MEMORY_FLAG_SECURE;
@@ -1191,6 +1196,13 @@ size_t V4L2Queue::AllocateBuffers(size_t count,
       .flags = flags};
   DVQLOGF(3) << "Requesting " << count << " buffers ("
              << (incoherent ? "incoherent" : "coherent") << ")";
+#else
+  struct v4l2_requestbuffers reqbufs = {
+      .count = base::checked_cast<decltype(v4l2_requestbuffers::count)>(count),
+      .type = type_,
+      .memory = memory};
+  DVQLOGF(3) << "Requesting " << count << " buffers";
+#endif
 
   int ret = ioctl_cb_.Run(VIDIOC_REQBUFS, &reqbufs);
   if (ret) {
@@ -1256,12 +1268,17 @@ bool V4L2Queue::DeallocateBuffers() {
   secure_buffers_.clear();
 
   // Free all buffers.
+#if BUILDFLAG(IS_CHROMEOS)
   __u8 flags = incoherent_ ? V4L2_MEMORY_FLAG_NON_COHERENT : 0;
   if (allocate_secure_cb_) {
     flags |= V4L2_MEMORY_FLAG_SECURE;
   }
   struct v4l2_requestbuffers reqbufs = {
       .count = 0, .type = type_, .memory = memory_, .flags = flags};
+#else
+  struct v4l2_requestbuffers reqbufs = {
+      .count = 0, .type = type_, .memory = memory_};
+#endif
 
   int ret = ioctl_cb_.Run(VIDIOC_REQBUFS, &reqbufs);
   if (ret) {
@@ -1580,6 +1597,8 @@ std::optional<struct v4l2_format> V4L2Queue::SetModifierFormat(
     uint64_t modifier,
     const gfx::Size& size) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+
+#if BUILDFLAG(IS_CHROMEOS)
   if (DRM_FORMAT_MOD_QCOM_COMPRESSED == modifier) {
     auto format = SetFormat(V4L2_PIX_FMT_QC08C, size, 0);
 
@@ -1588,6 +1607,7 @@ std::optional<struct v4l2_format> V4L2Queue::SetModifierFormat(
     }
     return format;
   }
+#endif
   return std::nullopt;
 }
 
@@ -1699,6 +1719,7 @@ bool V4L2Request::ApplyCtrls(struct v4l2_ext_controls* ctrls) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   DCHECK_NE(ctrls, nullptr);
 
+#if BUILDFLAG(IS_CHROMEOS)
   if (!request_fd_.is_valid()) {
     VPLOGF(1) << "Invalid request";
     return false;
@@ -1708,12 +1729,16 @@ bool V4L2Request::ApplyCtrls(struct v4l2_ext_controls* ctrls) {
   ctrls->request_fd = request_fd_.get();
 
   return true;
+#else
+  return false;
+#endif
 }
 
 bool V4L2Request::ApplyQueueBuffer(struct v4l2_buffer* buffer) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   DCHECK_NE(buffer, nullptr);
 
+#if BUILDFLAG(IS_CHROMEOS)
   if (!request_fd_.is_valid()) {
     VPLOGF(1) << "Invalid request";
     return false;
@@ -1723,11 +1748,15 @@ bool V4L2Request::ApplyQueueBuffer(struct v4l2_buffer* buffer) {
   buffer->request_fd = request_fd_.get();
 
   return true;
+#else
+  return false;
+#endif
 }
 
 bool V4L2Request::Submit() {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 
+#if BUILDFLAG(IS_CHROMEOS)
   if (!request_fd_.is_valid()) {
     VPLOGF(1) << "No valid request file descriptor to submit request.";
     return false;
@@ -1739,6 +1768,9 @@ bool V4L2Request::Submit() {
   }
 
   return true;
+#else
+  return false;
+#endif
 }
 
 bool V4L2Request::IsCompleted() {
@@ -1775,6 +1807,7 @@ bool V4L2Request::WaitForCompletion(int poll_timeout_ms) {
 bool V4L2Request::Reset() {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 
+#if BUILDFLAG(IS_CHROMEOS)
   if (!request_fd_.is_valid()) {
     VPLOGF(1) << "Invalid request";
     return false;
@@ -1788,6 +1821,9 @@ bool V4L2Request::Reset() {
   }
 
   return true;
+#else
+  return false;
+#endif
 }
 
 V4L2RequestRefBase::V4L2RequestRefBase(V4L2RequestRefBase&& req_base) {
@@ -1864,6 +1900,7 @@ V4L2RequestsQueue::~V4L2RequestsQueue() {
 std::optional<base::ScopedFD> V4L2RequestsQueue::CreateRequestFD() {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 
+#if BUILDFLAG(IS_CHROMEOS)
   int request_fd;
   int ret = HANDLE_EINTR(
       ioctl(media_fd_.get(), MEDIA_IOC_REQUEST_ALLOC, &request_fd));
@@ -1874,11 +1911,15 @@ std::optional<base::ScopedFD> V4L2RequestsQueue::CreateRequestFD() {
   }
 
   return base::ScopedFD(request_fd);
+#else
+  return std::nullopt;
+#endif
 }
 
 std::optional<V4L2RequestRef> V4L2RequestsQueue::GetFreeRequest() {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 
+#if BUILDFLAG(IS_CHROMEOS)
   V4L2Request* request_ptr =
       free_requests_.empty() ? nullptr : free_requests_.front();
   if (request_ptr && request_ptr->IsCompleted()) {
@@ -1916,6 +1957,9 @@ std::optional<V4L2RequestRef> V4L2RequestsQueue::GetFreeRequest() {
   }
 
   return V4L2RequestRef(request_ptr);
+#else
+  return std::nullopt;
+#endif
 }
 
 void V4L2RequestsQueue::ReturnRequest(V4L2Request* request) {

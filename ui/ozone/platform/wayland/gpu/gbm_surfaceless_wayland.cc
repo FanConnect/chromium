@@ -36,6 +36,12 @@ static constexpr size_t kMaxSolidColorBuffers = 12;
 
 static constexpr gfx::Size kSolidColorBufferSize{4, 4};
 
+void WaitForEGLFence(EGLDisplay display, EGLSyncKHR fence) {
+  eglClientWaitSyncKHR(display, fence, EGL_SYNC_FLUSH_COMMANDS_BIT_KHR,
+                       EGL_FOREVER_KHR);
+  eglDestroySyncKHR(display, fence);
+}
+
 void WaitForGpuFences(std::vector<std::unique_ptr<gfx::GpuFence>> fences) {
   for (auto& fence : fences)
     fence->Wait();
@@ -215,8 +221,9 @@ void GbmSurfacelessWayland::Present(SwapCompletionCallback completion_callback,
     return;
   }
 
-  base::OnceClosure fence_wait_task;
   std::vector<std::unique_ptr<gfx::GpuFence>> fences;
+  // Uset in-fences provided in the overlays. If there are none, we insert our
+  // own fence and wait.
   for (auto& config : frame->configs) {
     if (!config.access_fence_handle.is_null()) {
       fences.push_back(std::make_unique<gfx::GpuFence>(
@@ -225,7 +232,18 @@ void GbmSurfacelessWayland::Present(SwapCompletionCallback completion_callback,
     }
   }
 
-  fence_wait_task = base::BindOnce(&WaitForGpuFences, std::move(fences));
+  base::OnceClosure fence_wait_task;
+  if (!fences.empty()) {
+    fence_wait_task = base::BindOnce(&WaitForGpuFences, std::move(fences));
+  } else {
+    // TODO(fangzhoug): the following should be replaced by a per surface flush
+    // as it gets implemented in GL drivers.
+    // HACK: The Mali's implicit external sync seems broken.
+    EGLSyncKHR fence = InsertFence(/* has_implicit_external_sync_ */ false);
+    CHECK_NE(fence, EGL_NO_SYNC_KHR) << "eglCreateSyncKHR failed";
+
+    fence_wait_task = base::BindOnce(&WaitForEGLFence, GetEGLDisplay(), fence);
+  }
 
   base::OnceClosure fence_retired_callback = base::BindOnce(
       &GbmSurfacelessWayland::FenceRetired, weak_factory_.GetWeakPtr(), frame);
@@ -296,6 +314,14 @@ void GbmSurfacelessWayland::MaybeSubmitFrames() {
                                     std::move(submitted_frame->configs));
     submitted_frames_.push_back(std::move(submitted_frame));
   }
+}
+
+EGLSyncKHR GbmSurfacelessWayland::InsertFence(bool implicit) {
+  const EGLint attrib_list[] = {EGL_SYNC_CONDITION_KHR,
+                                EGL_SYNC_PRIOR_COMMANDS_IMPLICIT_EXTERNAL_ARM,
+                                EGL_NONE};
+  return eglCreateSyncKHR(GetEGLDisplay(), EGL_SYNC_FENCE_KHR,
+                          implicit ? attrib_list : nullptr);
 }
 
 void GbmSurfacelessWayland::FenceRetired(PendingFrame* frame) {

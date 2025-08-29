@@ -20,7 +20,7 @@
 
 #include "build/build_config.h"
 
-#if defined(ARCH_CPU_ARM_FAMILY)
+#if defined(ARCH_CPU_ARM_FAMILY) && BUILDFLAG(IS_CHROMEOS)
 // The MT21C software decompressor is tightly coupled to the MT8173.
 // See mt21_decompressor.h
 #define SUPPORT_MT21_PIXEL_FORMAT_SOFTWARE_DECOMPRESSION

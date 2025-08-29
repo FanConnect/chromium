@@ -309,7 +309,8 @@ class Device final : public ui::GbmDevice {
       const gfx::Size& requested_size,
       uint32_t flags,
       const std::vector<uint64_t>& modifiers) override {
-    if (modifiers.empty()) {
+    // HACK: Force disabling modifiers
+    if (true || modifiers.empty()) {
       return CreateBuffer(format, requested_size, flags);
     }
 
